@@ -72,9 +72,36 @@ def process_dmo_xml(xml_file_path=None):
         print(f"Error processing XML file: {e}")
         return None
 
+def load_df_from_csv(csv_file_path=None):
+    """
+    Loads the cleaned DMO CSV file and returns a pandas DataFrame.
+
+    Parameters:
+        csv_file_path (str): Optional path to a manually provided CSV file. Defaults to the standard location.
+
+    Returns:
+        pd.DataFrame: DataFrame containing the DMO data.
+    """
+    if csv_file_path is None:
+        csv_file_path = csv_file_path = os.path.join(data_dir, "dmo_data.csv")
+
+    if not os.path.exists(csv_file_path):
+        print(f"CSV file not found at {csv_file_path}. Please process the XML file first by calling process_dmo_xml().")
+        return None
+
+    try:
+        df = pd.read_csv(csv_file_path, parse_dates=["CLOSE_OF_BUSINESS_DATE", "REDEMPTION_DATE", "FIRST_ISSUE_DATE",
+                                                "CURRENT_EX_DIV_DATE"], low_memory=False)
+        print(f"Loaded DMO data from {csv_file_path} to a DataFrame.")
+        return df
+    except Exception as e:
+        print(f"Error loading CSV file: {e}")
+        return None
 
 if __name__ == "__main__":
     # fetch_dmo_xml()
     df = process_dmo_xml("data/XmlDataReport.xml")
+    df = load_df_from_csv()
     if df is not None:
         print(df.head())
+        print(df.tail())
