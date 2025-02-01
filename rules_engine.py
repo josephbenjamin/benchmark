@@ -194,3 +194,48 @@ def apply_rules(df, new_issue_maturity):
     df = find_ICMA_benchmark(df)
 
     return df
+
+
+# SINGLE OPTIMISED FUNCTION
+def get_icma_benchmark(df, maturity_str: str) -> str:
+    """
+    Given a maturity date, applies all ICMA benchmark selection rules and returns
+    the Redemption_Date of the selected benchmark.
+
+    Parameters:
+        df (pd.DataFrame): Original DataFrame before any rule columns are created.
+        maturity_str (str): The input maturity date as a string ('YYYY-MM-DD').
+
+    Returns:
+        pd.Timestamp or None: The Redemption_Date of the ICMA Benchmark, if found.
+    """
+    maturity_date = pd.to_datetime(maturity_str)
+
+    # Apply filtering directly on df to find appropriate benchmarks (ABs)
+    ab_df = df[
+        (df['TOTAL_AMOUNT_IN_ISSUE'] >= 10_000) &  # Benchmark size
+        (~df['ISIN_CODE'].isin([]))  # No inappropriate gilts (define exclusions if needed)
+    ]
+
+    # Get same-year, same-month, and nearest-shorter/longer bonds
+    same_year = ab_df[ab_df['REDEMPTION_DATE'].dt.year == maturity_date.year]
+    same_month = same_year[same_year['REDEMPTION_DATE'].dt.month == maturity_date.month]
+
+    nearest_shorter = ab_df[ab_df['REDEMPTION_DATE'] < maturity_date]
+    nearest_shorter_cal_yr = same_year[same_year['REDEMPTION_DATE'] < maturity_date]
+
+    nearest_longer_cal_yr = same_year[same_year['REDEMPTION_DATE'] > maturity_date]
+
+    # Apply ICMA rules in one-pass logic
+    if len(same_year) == 1:
+        return same_year['REDEMPTION_DATE'].iloc[0]
+    if same_year.empty and not nearest_shorter.empty:
+        return nearest_shorter['REDEMPTION_DATE'].max()
+    if len(same_month) == 1:
+        return same_month['REDEMPTION_DATE'].iloc[0]
+    if len(nearest_shorter_cal_yr) == 1:
+        return nearest_shorter_cal_yr['REDEMPTION_DATE'].iloc[0]
+    if len(nearest_longer_cal_yr) == 1:
+        return nearest_longer_cal_yr['REDEMPTION_DATE'].iloc[0]
+
+    return None  # No benchmark found
