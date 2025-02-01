@@ -142,7 +142,7 @@ def find_ICMA_benchmark(df, verbose=True):
         # R7.4(c)(ii) If nothing maturing in same month, find nearest shorter in calendar year
         if verbose: print(f'R7.4(c)(i) not satisfied, proceeding to R7.4(c)(ii): nearest shorter AB.')
         nearest_shorter_cal_yr_df = ab_df[ab_df['NEAREST_SHORTER_CAL_YR'] == True]
-        if len(same_month_df) == 1:
+        if len(nearest_shorter_cal_yr_df) == 1:
             if verbose: print(f'>>R7.4(c)(ii) satisfied. Benchmark identified.')
             df.loc[df['REDEMPTION_DATE'] == nearest_shorter_cal_yr_df['REDEMPTION_DATE'].iloc[0], 'ICMA_BENCHMARK'] = True
             return df
