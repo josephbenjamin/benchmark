@@ -21,9 +21,10 @@ def same_year_and_month(row, input_date_str):
 
 # ---- Finding Specific Gilts ----
 def find_unique_same_year(df, input_date_str):
-    """Mark True for the only gilt that matures in the same year, if unique."""
+    """Mark True for the only AB gilt that matures in the same year, if unique."""
     input_date = pd.to_datetime(input_date_str)
-    filtered_df = df[df['REDEMPTION_DATE'].dt.year == input_date.year]
+    filtered_df = df[df['IS_AB'] == True]
+    filtered_df = filtered_df[filtered_df['REDEMPTION_DATE'].dt.year == input_date.year]
 
     df['UNIQUE_SAME_YEAR'] = False
     if len(filtered_df) == 1:
@@ -31,9 +32,10 @@ def find_unique_same_year(df, input_date_str):
     return df
 
 def find_nearest_shorter(df, input_date_str):
-    """Mark True for the gilt with the latest redemption date before input_date."""
+    """Mark True for the AB gilt with the latest redemption date before input_date."""
     input_date = pd.to_datetime(input_date_str)
-    filtered_df = df[df['REDEMPTION_DATE'] < input_date]
+    filtered_df = df[df['IS_AB'] == True]
+    filtered_df = filtered_df[filtered_df['REDEMPTION_DATE'] < input_date]
 
     df['NEAREST_SHORTER'] = False
     if not filtered_df.empty:
@@ -42,9 +44,10 @@ def find_nearest_shorter(df, input_date_str):
     return df
 
 def find_nearest_shorter_cal_yr(df, input_date_str):
-    """Mark True for the latest gilt before input_date within the same calendar year."""
+    """Mark True for the latest AB gilt before input_date within the same calendar year."""
     input_date = pd.to_datetime(input_date_str)
-    filtered_df = df[df['REDEMPTION_DATE'].dt.year == input_date.year]
+    filtered_df = df[df['IS_AB'] == True]
+    filtered_df = filtered_df[filtered_df['REDEMPTION_DATE'].dt.year == input_date.year]
     filtered_df = filtered_df[filtered_df['REDEMPTION_DATE'] < input_date]
 
     df['NEAREST_SHORTER_CAL_YR'] = False
@@ -54,9 +57,10 @@ def find_nearest_shorter_cal_yr(df, input_date_str):
     return df
 
 def find_nearest_longer_cal_yr(df, input_date_str):
-    """Mark True for the shortest gilt after input_date within the same calendar year."""
+    """Mark True for the shortest AB gilt after input_date within the same calendar year."""
     input_date = pd.to_datetime(input_date_str)
-    filtered_df = df[df['REDEMPTION_DATE'].dt.year == input_date.year]
+    filtered_df = df[df['IS_AB'] == True]
+    filtered_df = filtered_df[filtered_df['REDEMPTION_DATE'].dt.year == input_date.year]
     filtered_df = filtered_df[filtered_df['REDEMPTION_DATE'] > input_date]
 
     df['NEAREST_LONGER_CAL_YR'] = False
@@ -197,7 +201,7 @@ def apply_rules(df, new_issue_maturity):
 
 
 # SINGLE OPTIMISED FUNCTION
-def get_icma_benchmark(df, maturity_str: str) -> str:
+def get_icma_benchmark(df, maturity_str: str) -> pd.Timestamp:
     """
     Given a maturity date, applies all ICMA benchmark selection rules and returns
     the Redemption_Date of the selected benchmark.
@@ -211,11 +215,11 @@ def get_icma_benchmark(df, maturity_str: str) -> str:
     """
     maturity_date = pd.to_datetime(maturity_str)
 
-    # Apply filtering directly on df to find appropriate benchmarks (ABs)
+    # Apply filtering to find appropriate benchmarks (ABs)
     ab_df = df[
         (df['TOTAL_AMOUNT_IN_ISSUE'] >= 10_000) &  # Benchmark size
         (~df['ISIN_CODE'].isin([]))  # No inappropriate gilts (define exclusions if needed)
-    ]
+    ].copy()
 
     # Get same-year, same-month, and nearest-shorter/longer bonds
     same_year = ab_df[ab_df['REDEMPTION_DATE'].dt.year == maturity_date.year]
@@ -223,19 +227,37 @@ def get_icma_benchmark(df, maturity_str: str) -> str:
 
     nearest_shorter = ab_df[ab_df['REDEMPTION_DATE'] < maturity_date]
     nearest_shorter_cal_yr = same_year[same_year['REDEMPTION_DATE'] < maturity_date]
-
     nearest_longer_cal_yr = same_year[same_year['REDEMPTION_DATE'] > maturity_date]
 
-    # Apply ICMA rules in one-pass logic
-    if len(same_year) == 1:
-        return same_year['REDEMPTION_DATE'].iloc[0]
-    if same_year.empty and not nearest_shorter.empty:
-        return nearest_shorter['REDEMPTION_DATE'].max()
-    if len(same_month) == 1:
-        return same_month['REDEMPTION_DATE'].iloc[0]
-    if len(nearest_shorter_cal_yr) == 1:
-        return nearest_shorter_cal_yr['REDEMPTION_DATE'].iloc[0]
-    if len(nearest_longer_cal_yr) == 1:
-        return nearest_longer_cal_yr['REDEMPTION_DATE'].iloc[0]
+    print(f"Processing date: {maturity_str}")
+    print(f"Same year count: {len(same_year)}")
+    print(f"Same month count: {len(same_month)}")
+    print(f"Nearest shorter count: {len(nearest_shorter)}")
+    print(f"Nearest shorter in calendar year count: {len(nearest_shorter_cal_yr)}")
+    print(f"Nearest longer in calendar year count: {len(nearest_longer_cal_yr)}")
 
+    # Apply ICMA rules in sequence
+    if len(same_year) == 1:
+        print("Rule R7.4(a) satisfied: Single gilt in same year")
+        return same_year['REDEMPTION_DATE'].iloc[0]
+
+    if same_year.empty and not nearest_shorter.empty:
+        print("Rule R7.4(b) satisfied: No gilt in same year, using nearest shorter")
+        return nearest_shorter['REDEMPTION_DATE'].max()
+
+    if len(same_month) == 1:
+        print("Rule R7.4(c)(i) satisfied: Single gilt in same month")
+        return same_month['REDEMPTION_DATE'].iloc[0]
+
+    if not nearest_shorter_cal_yr.empty:
+        nearest_shorter_cal_yr_date = nearest_shorter_cal_yr['REDEMPTION_DATE'].max()
+        print(f"Rule R7.4(c)(ii) satisfied: Using max nearest shorter gilt in same calendar year: {nearest_shorter_cal_yr_date}")
+        return nearest_shorter_cal_yr_date
+
+    if not nearest_longer_cal_yr.empty:
+        nearest_longer_cal_yr_date = nearest_longer_cal_yr['REDEMPTION_DATE'].min()
+        print(f"Rule R7.4(c)(iii) satisfied: Using min nearest longer gilt in same calendar year: {nearest_longer_cal_yr_date}")
+        return nearest_longer_cal_yr_date
+
+    print("No benchmark found")
     return None  # No benchmark found
