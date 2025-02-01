@@ -11,7 +11,7 @@ def main():
     df = dp.load_data()
     df = dp.filter_conventional_gilts(df)
 
-    nim = '2028-01-01' # New Issue Maturity
+    nim = '2029-11-22' # New Issue Maturity
     print(get_icma_benchmark(df, nim))
     df = re.apply_rules(df, nim)
 
