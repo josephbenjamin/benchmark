@@ -1,5 +1,3 @@
-pipfile
-pipfile.lock
 .idea/
 *.pyc
 __pycache__/
