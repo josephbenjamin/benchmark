@@ -50,11 +50,10 @@ RULE 2) filter AB for year = n and month = m. If len(AB) = 1, use that.\
 RULE 3) filter AB for year = n, and shorter than Maturity. Take Longest.
 
 ## Visualisation
-Grid where each bond is a row.\
-Each row shows Amt Out (heatmap) and a col for Appropriate=True/False\
-Then Rule 1 column = green for single bond in same calendar year / orange for multiple.
-Then Rule 2 column = green for single bond in same month
-THen Rule 3 column = green for next shortest.
+The program produces a chart and integrated table showing the breakdown
+of the rules engine.\
+Here is an illustrative output:\
+![Illustrative Chart Output](figures/plot.png)
 
 ## Benchmark Bonds
 Benchmark stocks are those gilts of which a large quantity has been issued, which are actively traded, and which tend to pay interest at rates in line with the prevailing market level of yields. Benchmark stocks provide a reference for the market and are also used to price other instruments of corresponding maturity, such as corporate bonds. 

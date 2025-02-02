@@ -130,3 +130,4 @@ def show_gilts(df, new_issue_maturity_str):
     plt.tight_layout()
     plt.subplots_adjust(hspace=0.7)
     plt.show()
+    plt.savefig("figures/plot.svg")
