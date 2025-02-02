@@ -23,7 +23,7 @@ Links to relevant sites and documents
 
 
 ## Open Questions
--[ ] What exactly is grounds for considering a benchmark gilt not appropriate?
+- [ ] What exactly is grounds for considering a benchmark gilt not appropriate?
   - Prior to Dec 2023, the Handbook made reference in section 7.3A to two specific Gilts which were
   agreed to have been deemed 'Not Appropriate', and it seems these were due to having high coupons
   - If this was due to the fact that the delta of a bond trading far from par would be quite different
