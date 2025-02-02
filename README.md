@@ -53,7 +53,7 @@ RULE 3) filter AB for year = n, and shorter than Maturity. Take Longest.
 The program produces a chart and integrated table showing the breakdown
 of the rules engine.\
 Here is an illustrative output:\
-![Illustrative Chart Output](figures/plot.png)
+![Illustrative Chart Output](figures/plot.svg)
 
 ## Benchmark Bonds
 Benchmark stocks are those gilts of which a large quantity has been issued, which are actively traded, and which tend to pay interest at rates in line with the prevailing market level of yields. Benchmark stocks provide a reference for the market and are also used to price other instruments of corresponding maturity, such as corporate bonds. 
